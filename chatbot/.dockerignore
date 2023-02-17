@@ -1,2 +1,2 @@
-rasa.Dockerfile
-crash_chatbot.py
+chatbot.Dockerfile
+chatbot_env
