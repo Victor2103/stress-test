@@ -105,7 +105,7 @@ ovhai app run --name rasa-api-4-cpu \
 
 And for 1 GPU, just run :
 ```bash
-ovhai app run --name rasa-api-4-cpu \
+ovhai app run --name rasa-api-1-gpu \
 --gpu 1 \
 --default-http-port 5005 \
 <shared-registry-address>/rasa-api:latest
