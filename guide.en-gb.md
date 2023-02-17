@@ -62,6 +62,60 @@ CMD rasa run --enable-api
 ```
 Our dockerfile is now created. Let's put it inside the folder `chatbot` in our git repository, name it chatbot.Dockerfile and let's create the image ! If you want to directly create the image, the dockerfile is [here](https://github.com/Victor2103/stress-test/blob/dev/chatbot/chatbot.Dockerfile) you have no need to create it. 
 
+Now, let's create the image. Just run this command on the root of the folder :
+
+```bash
+docker build . -f chatbot.Dockerfile -t rasa-api:latest
+```
+
+You can now push this docker image in your repository dockerhub or in your private directory docker directly on OVHcloud. More information about this can be found [here](https://docs.ovh.com/fr/publiccloud/ai/training/add-private-registry/).
+
+To push it on your private directory registry you can follow this little tutorial. 
+
+```console
+ovhai registry list
+```
+
+Login on the shared registry with your usual OpenStack credentials:
+
+```console
+docker login -u <user> -p <password> <shared-registry-address>
+```
+
+Push the compiled image into the shared registry:
+
+```console
+docker tag rasa-api:latest <shared-registry-address>/rasa-api:latest
+docker push <shared-registry-address>/rasa-api:latest
+```
+
+
+You want to test it locally. No problem, run the command above :
+```bash
+docker run --rm -it -p 5005:5005 --user=42420:42420 rasa-api:latest
+```
+
+Ok, now let's deploy on OVHcloud to api of rasa, one with one GPU and one with 4 cpus. It is really easy, you just have to run two commands in the same terminal. Here are they :
+```bash
+ovhai app run --name rasa-api-4-cpu \
+--cpu 4 \
+--default-http-port 5005 \
+<shared-registry-address>/rasa-api:latest
+```
+
+And for 1 GPU, just run :
+```bash
+ovhai app run --name rasa-api-4-cpu \
+--gpu 1 \
+--default-http-port 5005 \
+<shared-registry-address>/rasa-api:latest
+```
+
+Ok, now our apps should be available. You can go on the URL provide by OVHcloud, you will just see a message with Hello from Rasa. Let's now try our API with a simple curl in the terminal. 
+
+### Try our API
+
+
 
 ## Go further
 
@@ -82,5 +136,3 @@ If you want to train a rasa chatbot with the tool AI Training, please look at th
 Please send us your questions, feedback and suggestions to improve the service:
 
 - On the OVHcloud [Discord server](https://discord.com/invite/vXVurFfwe9)
-
-
