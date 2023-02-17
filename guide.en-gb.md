@@ -23,7 +23,44 @@ The aim of this tutorial is to benchmarking your application. Imagine you create
 
 ## Instructions
 
+### Create our 2 apis for the chatbot. 
 
+The chatbot is a simple rasa chatbot. The purpose of this tutorial is not to create or deploy the chatbot. Please go [here](https://docs.ovh.com/fr/publiccloud/ai/) if you want to do this. So now, let's deploy two apps, one with 1 GPU and the other with 4 cpu. To do this, let's first clone this [repo git](https://github.com/Victor2103/stress-test) ! 
+
+Once he is cloned, we will create the Dockerfile to build the API of the chatbot !
+
+To do so, we will specify the parent directory image we will use :
+
+```console
+FROM python:3.8
+```
+
+Then we specify the repository we will copy in our dockerfile. 
+
+```console
+WORKDIR /workspace
+ADD . /workspace
+```
+
+We install all of the requirements of rasa. This requirements permits to launch the api of rasa, our chatbot. 
+
+```console
+RUN pip install --no-cache-dir -r requirements_rasa.txt
+```
+
+Then we say to OVHcloud we want to run the dockerfile as a user 420420. 
+
+```console
+RUN chown -R 42420:42420 /workspace
+ENV HOME=/workspace
+```
+
+You specify the command to run the docker container and we specify the port where we will expose our chatbot. 
+```console
+EXPOSE 5005 
+CMD rasa run --enable-api 
+```
+Our dockerfile is now created. Let's put it inside the folder `chatbot` in our git repository, name it chatbot.Dockerfile and let's create the image ! If you want to directly create the image, the dockerfile is [here](https://github.com/Victor2103/stress-test/blob/dev/chatbot/chatbot.Dockerfile) you have no need to create it. 
 
 
 ## Go further
