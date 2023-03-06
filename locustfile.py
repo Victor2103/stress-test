@@ -1,12 +1,14 @@
 from locust import HttpUser, task
 import os
 import random
-import string
+from lorem_text import lorem
 from dotenv import load_dotenv
 load_dotenv()
 
-messages = ["Weel done, you win a TV", "Hi, can you help me", "This is a message", "CLick here",
-          "Here is the newsletter ", "Hello, are you free this afternoon to eat", "Here is your invoice from last week"]
+messages = []
+
+for i in range(1000):
+    messages.append(lorem.paragraphs(10))
 
 headers = {"Authorization": f"Bearer {os.getenv('TOKEN')}"}
 
