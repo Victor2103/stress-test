@@ -10,111 +10,44 @@ order: 10
 
 ## Objective
 
-The aim of this tutorial is to benchmarking your application. Imagine you create your chatbot and you want to know how many GPU you will need to deploy it.  To do this, there are several applications who permits to easily test your API. But how can they test your APIs ? It is easy. They just simulate a number of user you want, the number of calls they make in your API per minute or seconds. The objective is to see the limits of number of calls on the API. In our example, we will use the API of a rasa chatbot already deployed. We will consider that there are 1000 users and every seconds, there 100 users who make a request on the API. So how many CPU/GPU I need ? How can I know my app will not crash. Let's try it. We will deploy two API of the same chatbot. One API will have 4 cpus and the second API will use 1 GPU. To simulate the users we will use the module Locust. Of course, there lots of others applications to stress test your apps. But locust is really easy to install and to use. It is a very good start to understand the purpose of this tutorial. 
+The aim of this tutorial is to benchmarking your application. Imagine you create your application and you want to know how many GPU you will need to deploy it. How many users will use your API ? To do this, there are several applications who simulate the number of users and the number of requests you want to simulate. But let's dive a little deeper. We will use here a simple framework from python named locust. This framework is really easy to install if you have pip on your machine. Of course, there lots of others applications to stress test your apps. I can name [hey](https://github.com/rakyll/hey). This app requires to use a virtual machine so is a little more complicated to install compared to locust. You can also use [k6](https://k6.io/docs/test-types/stress-testing/). This framework is a little more complicated to install but can be use without python if you don't like the language. Lots of apps have been created to stress test your applications. Now, let's try to test our API. In this use case, the api is a spam classifier. If you're interested with this API, please check this [tutorial](https://docs.ovh.com/fr/publiccloud/ai/deploy/tuto-fastapi-spam-classifier/). Lots of others API are available on the `OVH portfolio` from AI deploy. You can found them [here](https://docs.ovh.com/fr/publiccloud/ai/deploy/apps-portfolio/). But it is not the purpose of the tutorial because you must test your API ! 
 
 **Requirements**
 
 - Access to the [OVHcloud Control Panel](https://www.ovh.com/auth/?action=gotomanager&from=https://www.ovh.co.uk/&ovhSubsidiary=GB);
 - A Public Cloud project created;
-- The ovhai CLI interface installed on your laptop. More information [here](https://docs.ovh.com/gb/en/publiccloud/ai/cli/install-client/);
-- A [user for AI Deploy](https://docs.ovh.com/gb/en/publiccloud/ai/users/);
-- [Docker](https://www.docker.com/get-started) installed on your local computer;
-- Some knowledge about building image and [Dockerfile](https://docs.docker.com/engine/reference/builder/).
+- An API running in AI Deploy on your public cloud project. 
 
 ## Instructions
 
-### Create our 2 apis for the chatbot. 
-
-The chatbot is a simple rasa chatbot. The purpose of this tutorial is not to create or deploy the chatbot. Please go [here](https://docs.ovh.com/fr/publiccloud/ai/) if you want to do this. So now, let's deploy two apps, one with 1 GPU and the other with 4 cpu. To do this, let's first clone this [repo git](https://github.com/Victor2103/stress-test) ! 
-
-Once he is cloned, we will create the Dockerfile to build the API of the chatbot !
-
-To do so, we will specify the parent directory image we will use :
-
-```console
-FROM python:3.8
-```
-
-Then we specify the repository we will copy in our dockerfile. 
-
-```console
-WORKDIR /workspace
-ADD . /workspace
-```
-
-We install all of the requirements of rasa. This requirements permits to launch the api of rasa, our chatbot. 
-
-```console
-RUN pip install --no-cache-dir -r requirements_rasa.txt
-```
-
-Then we say to OVHcloud we want to run the dockerfile as a user 420420. 
-
-```console
-RUN chown -R 42420:42420 /workspace
-ENV HOME=/workspace
-```
-
-You specify the command to run the docker container and we specify the port where we will expose our chatbot. 
-```console
-EXPOSE 5005 
-CMD rasa run --enable-api 
-```
-Our dockerfile is now created. Let's put it inside the folder `chatbot` in our git repository, name it chatbot.Dockerfile and let's create the image ! If you want to directly create the image, the dockerfile is [here](https://github.com/Victor2103/stress-test/blob/dev/chatbot/chatbot.Dockerfile) you have no need to create it. 
-
-Now, let's create the image. Just run this command on the root of the folder :
-
-```bash
-docker build . -f chatbot.Dockerfile -t rasa-api:latest
-```
-
-You can now push this docker image in your repository dockerhub or in your private directory docker directly on OVHcloud. More information about this can be found [here](https://docs.ovh.com/fr/publiccloud/ai/training/add-private-registry/).
-
-To push it on your private directory registry you can follow this little tutorial. 
-
-```console
-ovhai registry list
-```
-
-Login on the shared registry with your usual OpenStack credentials:
-
-```console
-docker login -u <user> -p <password> <shared-registry-address>
-```
-
-Push the compiled image into the shared registry:
-
-```console
-docker tag rasa-api:latest <shared-registry-address>/rasa-api:latest
-docker push <shared-registry-address>/rasa-api:latest
-```
-
-
-You want to test it locally. No problem, run the command above :
-```bash
-docker run --rm -it -p 5005:5005 --user=42420:42420 rasa-api:latest
-```
-
-Ok, now let's deploy on OVHcloud to api of rasa, one with one GPU and one with 4 cpus. It is really easy, you just have to run two commands in the same terminal. Here are they :
-```bash
-ovhai app run --name rasa-api-4-cpu \
---cpu 4 \
---default-http-port 5005 \
-<shared-registry-address>/rasa-api:latest
-```
-
-And for 1 GPU, just run :
-```bash
-ovhai app run --name rasa-api-1-gpu \
---gpu 1 \
---default-http-port 5005 \
-<shared-registry-address>/rasa-api:latest
-```
-
-Ok, now our apps should be available. You can go on the URL provide by OVHcloud, you will just see a message with Hello from Rasa. Let's now try our API with a simple curl in the terminal. 
 
 ### Try our API
 
+Say hello to the chatbot to see how it respond. Open a terminal and launch this command :
+```console 
+curl -s -X POST \ 
+"<api_url>/model/parse?emulation_mode=LUIS" \
+-H "Authorization: Bearer <token>" \
+-H "Content-Type: application/json" \
+-d '{"text":"Hello","message_id":"00100203"}' |jq
+```
+
+Here are a few explanations of the lines : 
+- In the first line, we specify that we will use a post method. 
+- We specify the url where the post request will be executed. The `api_url` is the url you get before when you create your 2 apis of rasa. You can choose the api with 4 cpus or the api with 2 gpus. It should look something like this : `https://baac2c13-2e69-4d0f-ae6b-dg9eff9be513.app.gra.ai.cloud.ovh.net/`. 
+- We put the token to access our API. We specify it in the header of the request. 
+- We specify that our body in in a json format.
+- We put in our body the message we want to send to the chatbot. And we hope the chatbot will send us the probability of each response. The last `| jq` instruction permits to have a good display of the result in the terminal. 
+
+Now, let's stress test our 2 APIs ! We will use the framework locust. This framework is very easy to install, it is a module from pip. This tool provides an interface where you can specify the url of your api, the number of users connected to your API, the number of calls per minute and much more. To use locust, we will deploy it as an app with the tool `AI Deploy` from OVHcloud. 
+
+### Configure Locust to run the tests
+
+ 
+### See the results with Locust
+
+
+### See the results with the OVHcloud Monitoring APP
 
 
 ## Go further
