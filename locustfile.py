@@ -5,8 +5,8 @@ import string
 from dotenv import load_dotenv
 load_dotenv()
 
-intent = ["Hello", "Hi", "Bye", "Help me",
-          "can you help me ?", "WHo are you ?", "Good Morning"]
+messages = ["Weel done, you win a TV", "Hi, can you help me", "This is a message", "CLick here",
+          "Here is the newsletter ", "Hello, are you free this afternoon to eat", "Here is your invoice from last week"]
 
 headers = {"Authorization": f"Bearer {os.getenv('TOKEN')}"}
 
@@ -14,7 +14,6 @@ headers = {"Authorization": f"Bearer {os.getenv('TOKEN')}"}
 class HelloWorldUser(HttpUser):
     @task
     def hello_world(self):
-        body = {"text": random.choice(intent),
-                "message_id": ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10000))}
-        self.client.post("/model/parse?emulation_mode=LUIS",
+        body = {"message": random.choice(messages)}
+        self.client.post("/spam_detection_path",
                          headers=headers, json=body)
