@@ -6,7 +6,7 @@ section: AI Deploy - Tutorials
 order: 10
 ---
 
-**Last updated 17th February, 2023.**
+**Last updated 7th March, 2023.**
 
 ## Objective
 
@@ -23,27 +23,123 @@ The aim of this tutorial is to benchmarking your application. Imagine you create
 
 ### Try our API
 
-Say hello to the chatbot to see how it respond. Open a terminal and launch this command :
+Ok let's test our API with a simple curl command. To do this, we will do a simple curl command in a terminal. Here is the command : 
 ```console 
 curl -s -X POST \ 
-"<api_url>/model/parse?emulation_mode=LUIS" \
+"<api_url>/spam_detection_path \
 -H "Authorization: Bearer <token>" \
 -H "Content-Type: application/json" \
--d '{"text":"Hello","message_id":"00100203"}' |jq
+-d '{"message":"This is a test from my machine"}' | jq
 ```
 
 Here are a few explanations of the lines : 
 - In the first line, we specify that we will use a post method. 
-- We specify the url where the post request will be executed. The `api_url` is the url you get before when you create your 2 apis of rasa. You can choose the api with 4 cpus or the api with 2 gpus. It should look something like this : `https://baac2c13-2e69-4d0f-ae6b-dg9eff9be513.app.gra.ai.cloud.ovh.net/`. 
+- We specify the url where the post request will be executed. The `api_url` is the url of your api. It should look something like this : `https://baac2c13-2e69-4d0f-ae6b-dg9eff9be513.app.gra.ai.cloud.ovh.net/`. 
 - We put the token to access our API. We specify it in the header of the request. 
 - We specify that our body in in a json format.
-- We put in our body the message we want to send to the chatbot. And we hope the chatbot will send us the probability of each response. The last `| jq` instruction permits to have a good display of the result in the terminal. 
+- We put in our body the message we want to send to the spam classifier. In your case, the body could be different because it depends of the API. And we hope the chatbot will send us the probability of each response. The last `| jq` instruction permits to have a good display of the result in the terminal. 
 
-Now, let's stress test our 2 APIs ! We will use the framework locust. This framework is very easy to install, it is a module from pip. This tool provides an interface where you can specify the url of your api, the number of users connected to your API, the number of calls per minute and much more. To use locust, we will deploy it as an app with the tool `AI Deploy` from OVHcloud. 
+Now, that we test our API, let's try to stress test it. We will simply simulate several curl command. With the tool locust, we can simulate several users and define a number of calls to the API we want per minute. This can be easily done with the locust's interface. But before use this interface, we need to launch the locust and configure the tool. This can be easily done with python. Let's do this !
 
 ### Configure Locust to run the tests
 
- 
+To configure the software, you need to create a file named `locustfile.py`. In this file, you can put the path where you want to make your request, the headers of your request, the type of the request (POST, GET, etc) and the body if you want to add a body to the request. For my API, the locust file will be something like this : 
+```python
+# Import the dependecies of locust
+from locust import HttpUser, task
+# Import general library from python
+import os
+import random
+# Import lorem ipsum library to generate some text
+from lorem_text import lorem
+# Import dotenv to load the environments variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# Create a table with some lorem ipsum texts
+messages = []
+
+# Add 1000 random texts of 10 paragraphs each (simulate 1000 emails)
+for i in range(1000):
+    messages.append(lorem.paragraphs(10))
+
+# Define the headers of the request
+headers = {
+    "Authorization": f"Bearer {os.getenv('TOKEN')}", "Content-Type": "application/json"}
+
+
+class HelloWorldUser(HttpUser):
+    # Definition of the first path where we do our post request
+    @task
+    def hello_world(self):
+        # Define the body with the email choose randomly from the tab of all the emails
+        body = {"message": random.choice(messages)}
+        # Do the post request on the spam detection path
+        self.client.post("/spam_detection_path",
+                         headers=headers, json=body)
+```
+
+In this file, you have to change the path, the headers and the body because there are parameters who change from API to API. Once your locustfile is ready, you need to launch the interface locust. The best way to create this is to launch a container with your locust app. You can launch it locally with docker or directly on AI Deploy. [Here](https://docs.ovh.com/gb/en/publiccloud/ai/deploy/build-use-streamlit-image/) is an example of how to launch an app on AI Deploy. Below is how looks like your `requirements.txt` file if you want to use docker to launch locust. 
+```
+Brotli==1.0.9
+certifi==2022.12.7
+charset-normalizer==3.1.0
+click==8.1.3
+ConfigArgParse==1.5.3
+Flask==2.2.3
+Flask-BasicAuth==0.2.0
+Flask-Cors==3.0.10
+gevent==22.10.2
+geventhttpclient==2.0.8
+greenlet==2.0.2
+idna==3.4
+importlib-metadata==6.0.0
+itsdangerous==2.1.2
+Jinja2==3.1.2
+locust==2.15.0
+lorem-text==2.1
+MarkupSafe==2.1.2
+msgpack==1.0.4
+psutil==5.9.4
+python-dotenv==1.0.0
+pyzmq==25.0.0
+requests==2.28.2
+roundrobin==0.0.4
+six==1.16.0
+typing_extensions==4.5.0
+urllib3==1.26.14
+Werkzeug==2.2.3
+zipp==3.15.0
+zope.event==4.6
+zope.interface==5.5.2
+```
+
+And the dockerfile should be somethink like this : 
+```
+FROM python:3.8
+
+WORKDIR /workspace
+ADD . /workspace
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+
+RUN chown -R 42420:42420 /workspace
+ENV HOME=/workspace
+
+EXPOSE 8089
+
+CMD locust
+```
+
+Now, I have my app running on OVHcloud. Let's simulate some users ! 
+
+You can go on the url of your locust app and you should see somethink like this : 
+![image](images/locust.png){.thumbnail}
+
+Ok, now let's run our test to test our API. For my example, I will fill 1000 users of the API with 100 users who make a call per minute. And I will simulate this for a duration of 10m. Let's run and wait. Tic, Tac, the results will be in the next part ! 
+
 ### See the results with Locust
 
 
