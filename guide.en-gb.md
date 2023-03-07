@@ -142,9 +142,27 @@ Ok, now let's run our test to test our API. For my example, I will fill 1000 use
 
 ### See the results with Locust
 
+At the end of the test, I can get something like this in locust : 
+![image](images/result_locust.png){.thumbnail}
+
+I can see the number of request I made, the number of fails and also the number of current failures per seconds. Here, I can see that this value is null. I use for this API 3 CPU and 3 replicas with auto-scaling. I can see that my API hasn't be surcharged. So if my simulation is correct and I attend to get this specific number of users, 3 cpu is enough for my API. We can of course make a new test with more users to see the limits of our apis. put several task in the `locustfile.py`. 
+
+You can also see the details of the failure if you go on the tab failures. You can see if it is a server error or client or if the response has been to too long to be send. Some charts are also alavailable if you want to see when the failure has happened. All of your data can also be download in csv format if you want to see it after. 
+
+Let's see the same results in detail with the OVHcloud Monitoring APP. 
 
 ### See the results with the OVHcloud Monitoring APP
 
+This tool is provided for all of your applications in AI Deploy. All of the tools are combined in a simple Grafana Dashboard. You just have to change on the top of it the id of the app you want to monitor. With this tool, you can see the purcentage of cpu used in real time, the HTTP latency of your api, the auto scaling of the app. Here is the result for the CPU I get : 
+![image](images/cpu_spam.png){.thumbnail}
+
+We can see that our application is not at the maximum capacity of CPU. You can change the test if you want. Let's take a look at the latency of our application. 
+![image](images/latency_spam.png){.thumbnail}
+
+Here we see that the latency has increased because 100 users made request in only one minute. Does I need to provide more GPU because the latency is too high ? No, I don't think so because we use a spam classifier and the latency is not the more important point. Let's now take a look at the scaling of our application. 
+![image](images/scaling_spam.png){.thumbnail}
+
+We can see that the target has been fixed at 25% for the auto scaling and this has been respected. The app shows us what we must change for our api with the number of cpu/gpu. 
 
 ## Go further
 
