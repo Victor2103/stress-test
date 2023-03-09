@@ -1,3 +1,13 @@
+---
+title: AI Deploy - Tutorial - How to load test your application with Locust
+slug: deploy/load-test-app
+excerpt: Understand how you can easily benchmark your APIs and find their limits
+section: AI Deploy - Tutorials
+order: 10
+---
+
+**Last updated 9th March, 2023.**
+
 ## Objective
 
 The aim of this tutorial is to load test your deployed applications, by gradually query your APIs  with a load testing tool.
@@ -168,57 +178,72 @@ You now have your app running on OVHcloud, and locust configured. Let's simulate
 
 From the web interface, fill the amount of simultaneous users (API calls) and incremental step (spaw rate).
 
-For this tutorial, we will add 480 users in total, and a spawn rate of 2 users added per second. We will simulate this for a duration of 4m. We supposed that this case is for a rush on the API. Most of time, we supposed there are not so much users on the platform. Let's run and wait. Tic, Tac, the results will be in the next part ! 
+For this tutorial, we will add 480 users in total, and a spawn rate of 2 users added per second. We will simulate this for a duration of 4 minutes. We suppose that this case is for a rush on the API. Most of the time, we can assume that there are not so much users on the platform. 
+
+Launch the test. Tic, Tac, the results will be in the next part! 
 
 ### Interpret the results via Locust
 
-At the end of the load test, you will see this little summary of your requests : 
+At the end of the load test, you will see this quick summary: 
 
 ![image](images/result_locust.png){.thumbnail}
 
-If we want to get more details about the test, we can see the graphs provided by locust in the tab `charts`. Here is an example of the screenshot. 
+If we want to get more details about our test, we can see the graphs provided by Locust in the tab `charts`. Here is what we can see:
 
 ![image](images/locust_graphs.png){.thumbnail}
 
-With the graphics or with the little summary, we can see some failures. This failures are due to server error. We can suppose it's because our app has use some replicas and when she's doing this, it send a bad gateway to the users who want to make a call. 
+
+We deployed this API from 1 to 5 replicas, with 1 CPU for each of them, completed with auto-scaling. We can see that our API has been a bit overloaded. Indeed, with the graphics or with the quick summary, we can see some failures. These failures are due to server error. We may suppose  that we reached some hardware limits at some point, for example before scaling to a greater amount of replicas.
+
+Also, we can see an increasing call latency over time. At the end, we can expect more than 3 seconds per call.
+
+Result interpretation may depend of your needs and performance criterias. We can of course make a new test with more users to see the limits of our APIs, and put several tasks in the `locustfile.py`. 
+
+One thing cannot be seen here: OVHcloud backend scaling. We deployed our app with autoscaling, from 1 replica minimum to 3 replicas maximum.
+Did we use them ? Were they useful and at maximum capacity?
+
+Let's see the same results in details with the AI Deploy monitoring tool.
+
+### Interpret the results with the AI Deploy Monitoring
+
+Go in OVHcloud control panel, and get the detail of your deployed application. Click on the `Access Dashboards`button.
 
 
-We deployed this API on 5 replicas, with 1 CPU for each of them, completed with auto-scaling. We can see that my API has be surcharged. It is because I only choose to get one CPU.  
+This dashboard is provided for free in AI Deploy, for each deployed application. All of the deployed apps are combined in a simple Grafana Dashboard.
 
-If our simulation is correct and we attend to get this specific amount of users, our scale strategy is enough for my API. We can of course make a new test with more users to see the limits of our APIs, and put several tasks in the `locustfile.py`. 
-
-One thing cannot be seen here : OVHcloud backend scaling. We deployed our app with autoscaling, from 1 replica minimum to 3 replicas maximum.
-Did we use them ? Where they usefull and at maximum capacity ?
-
-Let's see the same results in detail with the AI Deploy monitoring tool.. 
-
-### Interpret the results with the OVHcloud Monitoring APP
-
-This tool is provided for free in AI Deploy, for each deployed application. All of the deployed apps are combined in a simple Grafana Dashboard. 
-
-You can select the deployed app on the top of this Grafana dashboard. 
+You can select the deployed app on the top of this Grafana dashboard, as shown below: 
 
 ![image](images/general_dashboard.png){.thumbnail}
 
-With this dashboard, you can see the percentage of CPU used in real time, the HTTP latency of your API, the auto-scaling of the app, network, ... 
+With this dashboard, you can see the percentage of CPU used in real time, the HTTP latency of your API, the autoscaling of the app, network bandwidth and more. 
+Vertical blue bar shows scaling events.
 
-Here is the result for the CPU we get: 
+Here is the result for the CPU load, overall (all replicas combined): 
 
 ![image](images/cpu_spam.png){.thumbnail}
 
-We can see that our app hasn't been surcharged. In fact, we only use 1 cpu and the capacity hasn't been overpowered. Let's now take a look at the latency of our application. 
+We can see that our app has scaled few times hasn't reach maximum capacity usage, thanks to autoscaling. Let's now take a look at the latency of our application:
+
 ![image](images/latency_spam.png){.thumbnail}
 
-Here we see that the latency has increased because 120 users made request in only one minute. Does I need to provide more GPU because the latency is too high ? No, I don't think so because we use a spam classifier and the latency is not the more important point. Let's now take a look at the scaling of our application. 
+Here we see that the latency has increased  gradually, since we hava a spawn rate of two new user per second. API latency was stable with approximately 750ms then peaked to 1.5s. 
+
+Again, interpretation will depends of your needs. Do we need to provide more CPU because the latency is too high ? This question will vary depending of your customers needs. For an anti-spam, adding 1 second it quite big for a company receiving thousands of mails per day, not so disturbing if it's a dozen per day. Let's now take a look at the scaling of our application:
+ 
 ![image](images/scaling_spam.png){.thumbnail}
 
-We can see that the target has been fixed at 75% for the auto scaling and this has been respected. On the 5 replicas provided to the application, 4 has been used. So we can conclude that the configuration of the spam classifier is enough for the auto scaling. The tool is more precise than locust. We simply use locust to simulate the number of users but to get the results, the grafana dashboard is more precise. 
+We can see that the threshold has be capped at 75% for the autoscaling and this has been respected. On the 5 replicas provided to the application, 4 has been used. 
+
+As a conclusion, both locust and AI Deploy Monitoring are useful to interpret results, but more than tools the most important thing is to define realisting workloads and performance criterias.
+ 
+Last point : while locust is measuring a latency end-to-end (from locust virtual machine here, to the API model deployed), AI Deploy monitoring is only measuring backbone latency (from the query to the answer). That's why latency values are higher on Locust side, reaching 2.5 seconds. 
+
 
 ## Go further
 
-Locust official documentation : [Locust](https://docs.locust.io/en/stable/)
+Locust official documentation : [Locust.io](https://docs.locust.io/en/stable/)
 
-Comparaison of load testing tools : [Comparaison of test tools](https://k6.io/blog/comparing-best-open-source-load-testing-tools/)
+Comparison of load testing tools : [Comparison of load testing tools](https://k6.io/blog/comparing-best-open-source-load-testing-tools/)
 
 ## Feedback
 
