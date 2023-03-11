@@ -1,20 +1,32 @@
+# Import the dependecies of locust
 from locust import HttpUser, task
+# Import general library from python
 import os
 import random
-import string
+# Import lorem ipsum library to generate some text
+from lorem_text import lorem
+# Import dotenv to load the environments variables
 from dotenv import load_dotenv
 load_dotenv()
 
-intent = ["Hello", "Hi", "Bye", "Help me",
-          "can you help me ?", "WHo are you ?", "Good Morning"]
+# Create a table with some lorem ipsum texts
+messages = []
 
-headers = {"Authorization": f"Bearer {os.getenv('TOKEN')}"}
+# Add 1000 random texts of 10 paragraphs each (simulate 1000 emails)
+for i in range(1000):
+    messages.append(lorem.paragraphs(10))
+
+# Define the headers of the request
+headers = {
+    "Authorization": f"Bearer {os.getenv('TOKEN')}", "Content-Type": "application/json"}
 
 
 class HelloWorldUser(HttpUser):
+    # Definition of the first path where we do our post request
     @task
     def hello_world(self):
-        body = {"text": random.choice(intent),
-                "message_id": ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10000))}
-        self.client.post("/model/parse?emulation_mode=LUIS",
+        # Define the body with the email choose randomly from the tab of all the emails
+        body = {"message": random.choice(messages)}
+        # Do the post request on the spam detection path
+        self.client.post("/spam_detection_path",
                          headers=headers, json=body)

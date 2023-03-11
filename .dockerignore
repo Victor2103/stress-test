@@ -1,3 +1,6 @@
 venv
 Dockerfile
 __pycache__
+chatbot
+images
+guide.en-gb.md
